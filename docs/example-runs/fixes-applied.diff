@@ -1,0 +1,41 @@
+diff --git a/demo/brightcart/src/cart.js b/demo/brightcart/src/cart.js
+index 28751bc..f9d6162 100644
+--- a/demo/brightcart/src/cart.js
++++ b/demo/brightcart/src/cart.js
+@@ -2,9 +2,9 @@ import { FREE_SHIPPING_FROM, PRODUCTS, SHIPPING_FEE } from "./data.js";
+ import { discountFor } from "./coupons.js";
+ 
+ export function searchProducts(query) {
+-  const q = query.trim();
++  const q = query.trim().toLowerCase();
+   if (!q) return PRODUCTS;
+-  return PRODUCTS.filter((p) => p.name.includes(q));
++  return PRODUCTS.filter((p) => p.name.toLowerCase().includes(q));
+ }
+ 
+ export function addItem(cart, id) {
+@@ -14,7 +14,9 @@ export function addItem(cart, id) {
+ }
+ 
+ export function decrementItem(cart, id) {
+-  return cart.map((l) => (l.id === id ? { ...l, qty: l.qty - 1 } : l));
++  return cart
++    .map((l) => (l.id === id ? { ...l, qty: l.qty - 1 } : l))
++    .filter((l) => l.qty > 0);
+ }
+ 
+ export function removeItem(cart, id) {
+diff --git a/demo/brightcart/src/coupons.js b/demo/brightcart/src/coupons.js
+index f92cd0e..cfe1764 100644
+--- a/demo/brightcart/src/coupons.js
++++ b/demo/brightcart/src/coupons.js
+@@ -12,6 +12,9 @@ export function validateCoupon(rawCode, now = new Date()) {
+   if (!code) return { error: COUPON_ERRORS.empty };
+   const coupon = COUPONS.find((c) => c.code === code);
+   if (!coupon) return { error: COUPON_ERRORS.notFound };
++  if (coupon.expires && now > new Date(`${coupon.expires}T23:59:59.999`)) {
++    return { error: COUPON_ERRORS.expired };
++  }
+   return { coupon };
+ }
+ 
