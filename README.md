@@ -32,6 +32,8 @@ Kane's results are fed back into the agent loop at every step. That loop is the 
 
 `demo/brightcart` is a small shop with four planted bugs (expired coupon accepted, case-sensitive search, quantity going negative, free-shipping threshold off by one). Real runs from building this repo (3 bugs, all red → green, with regression checks) are committed in [`docs/example-runs`](docs/example-runs). The demo on `main` stays buggy so you can run it yourself.
 
+**Try the buggy shop live:** https://brightcart-demo.vercel.app (try coupon `FALL10`, search "mug", or press − until the quantity hits 0). It's a static deploy of the buggy version and is never fixed, so it's the "before" picture. repro-fix itself runs against your local copy.
+
 ```
 🐞 Expired coupon FALL10 is still accepted at checkout — it should be rejected
 🌐 http://localhost:5173

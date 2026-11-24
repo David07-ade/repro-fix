@@ -17,6 +17,7 @@ Guardrails: if the test can't be made to fail, no code is touched; the fixer can
 
 Repo (MIT), with real red→green reports committed: https://github.com/David07-ade/repro-fix
 4-minute demo: <VIDEO>
+Try the buggy demo shop: https://brightcart-demo.vercel.app
 
 Built for the TestMu AI Kane CLI hackathon. I'd love feedback on the loop design, especially the "freeze the test" part.
 
@@ -40,6 +41,7 @@ Then every previously fixed bug re-runs too, so fixes can't quietly break other 
 
 4/ The agent can't edit the tests to make them pass, and infra errors never count as a "repro".
 Open source: https://github.com/David07-ade/repro-fix
+Break the demo shop yourself: https://brightcart-demo.vercel.app
 #KaneCLI #ClaudeCode
 
 ---
@@ -60,6 +62,7 @@ How it works:
 
 Demo (4 min): <VIDEO>
 Code (MIT): https://github.com/David07-ade/repro-fix
+Live demo shop (with the bugs): https://brightcart-demo.vercel.app
 
 #AI #SoftwareTesting #QA #ClaudeCode #KaneCLI
 
