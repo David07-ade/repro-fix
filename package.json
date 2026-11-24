@@ -1,0 +1,27 @@
+{
+  "name": "repro-fix",
+  "version": "0.1.0",
+  "description": "Make your coding agent prove the bug in a real browser (Kane CLI) before it's allowed to fix it.",
+  "type": "module",
+  "bin": {
+    "repro-fix": "bin/repro-fix.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
