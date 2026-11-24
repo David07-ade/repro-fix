@@ -2,13 +2,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 
 export function slugify(bug: string): string {
-  const s = bug
+  const full = bug
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 50)
-    .replace(/-+$/, "");
-  return s || "bug";
+    .replace(/^-+|-+$/g, "");
+  if (full.length <= 50) return full || "bug";
+  const cut = full.slice(0, 51);
+  const atWord = cut.slice(0, cut.lastIndexOf("-"));
+  return atWord || full.slice(0, 50);
 }
 
 const testsDir = (cwd: string) => join(cwd, ".repro", "tests");

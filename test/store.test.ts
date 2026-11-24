@@ -19,6 +19,11 @@ describe("slugify", () => {
     expect(s.length).toBeLessThanOrEqual(50);
     expect(s.endsWith("-")).toBe(false);
   });
+  it("cuts long slugs at a word boundary, not mid-word", () => {
+    expect(slugify("Expired coupon FALL10 is still accepted at checkout — it should be rejected")).toBe(
+      "expired-coupon-fall10-is-still-accepted-at",
+    );
+  });
   it("falls back for symbols-only input", () => {
     expect(slugify("!!!")).toBe("bug");
   });
