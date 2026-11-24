@@ -6,7 +6,7 @@ Coding agents love to say *"Fixed! ✅"*. repro-fix doesn't take their word for 
 
 1. 🧠 **Write a test.** Claude Code reads your app and writes a plain-English [Kane CLI](https://www.testmuai.com/kane-cli/) objective that should pass once the bug is fixed.
 2. 🔴 **Reproduce.** Kane runs that test in a real Chrome browser. It must **fail**. If it passes, the bug isn't reproduced and no code is touched.
-3. 🔒 **Freeze.** The failing test is locked. The fixer can't make it easier to pass.
+3. 🔒 **Freeze.** The failing test is locked. The fixer can't edit it to make it easier to pass.
 4. 🔧 **Fix.** Claude Code gets the bug plus Kane's evidence (what it saw, why it failed, the final page state) and edits the code.
 5. 🟢 **Verify.** Kane re-runs the *exact same* test. If it still fails, the new failure goes back to the fixer (up to 3 attempts).
 6. 🛡️ **Regression.** Every previously fixed bug's test runs again. If the fix broke one, that failure goes back to the fixer too.
@@ -91,9 +91,12 @@ Exit code is `0` only when the bug was reproduced **and** the fix was verified, 
 
 - **No fix without a red run.** If Kane can't make the test fail, repro-fix stops with "not reproduced" and changes nothing.
 - **Frozen tests.** The green run uses the identical objective string as the red run.
-- **Saved tests are off-limits.** The fixer runs with `--disallowedTools "Edit(.repro/**),Write(.repro/**)"`, and repro-fix hashes `.repro/` before and after every fix. Any change aborts the run as `tampered`.
+- **Saved tests and config are off-limits.** The fixer runs with `--disallowedTools` rules for `.repro/**` and `repro.config.json`, and repro-fix fingerprints both before and after every fix. Any change aborts the run as `tampered`.
+- **Errors still leave a report.** If Claude or Kane fails mid-run, you get a report with every run so far, the credits used and the files already changed.
 - **Infra errors aren't bugs.** Kane exit codes other than 0/1, or a missing `run_end`, count as infrastructure errors. They're retried once and never treated as a reproduction.
 - **Your work is safe.** It commits only if your tree was clean before the run, on its own `repro-fix/<slug>` branch. It never pushes.
+
+**Known limit:** the fixer could, in theory, special-case the app so it fools the test (for example by always rendering the expected message). The prompt forbids it and the diff is in every report for review, but that check is a human one.
 
 ## How Kane results feed the agent
 

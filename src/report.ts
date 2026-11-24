@@ -5,7 +5,8 @@ export const STATUS_LABEL: Record<LoopStatus, string> = {
   not_reproduced: "⚪ Not reproduced — no code changed",
   not_verified: "🔴 Not verified — fix attempts ran out",
   infra_error: "⚠️ Kane infrastructure error",
-  tampered: "⛔ Aborted — fixer touched saved tests",
+  tampered: "⛔ Aborted — fixer touched saved tests or repro.config.json",
+  error: "✖ Stopped by an error",
 };
 
 const ICON = { passed: "🟢 pass", failed: "🔴 fail", infra_error: "⚠️ error" } as const;

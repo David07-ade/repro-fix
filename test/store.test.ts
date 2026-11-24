@@ -111,3 +111,15 @@ describe("git", () => {
     expect(commitFix(d, "x", "fix", false).committed).toBe(false);
   });
 });
+
+describe("git review fixes", () => {
+  it("isCleanRepo checks the whole repo, not just the app subfolder", () => {
+    const d = repo();
+    const sub = join(d, "demo");
+    execSync("mkdir demo", { cwd: d, shell: "bash" } as any);
+    writeFileSync(join(sub, "app.js"), "x");
+    execSync("git add -A && git commit -qm demo", { cwd: d, shell: "bash" } as any);
+    writeFileSync(join(d, "a.txt"), "unrelated user work at repo root");
+    expect(isCleanRepo(sub)).toBe(false);
+  });
+});

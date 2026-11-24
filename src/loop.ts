@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { KaneResult, RunKane } from "./kane.js";
 import { extractJson, type RunClaude } from "./claude.js";
@@ -6,7 +8,7 @@ import { MAX_FIX_ATTEMPTS, fixPrompt, objectivePrompt } from "./prompts.js";
 
 export const MAX_OBJECTIVE_ATTEMPTS = 3;
 
-export type LoopStatus = "verified" | "not_reproduced" | "not_verified" | "infra_error" | "tampered";
+export type LoopStatus = "verified" | "not_reproduced" | "not_verified" | "infra_error" | "tampered" | "error";
 
 export interface Attempt {
   phase: "reproduce" | "verify" | "regression";
@@ -38,18 +40,47 @@ export interface LoopDeps {
 
 const READ_ONLY = ["Read", "Glob", "Grep"];
 const EDIT_TOOLS = ["Read", "Glob", "Grep", "Edit", "Write"];
-const PROTECT = ["Edit(.repro/**)", "Write(.repro/**)"];
+const PROTECT = ["Edit(.repro/**)", "Write(.repro/**)", "Edit(repro.config.json)", "Write(repro.config.json)"];
+
+/** Fingerprint of everything the fixer must not touch: saved tests/reports and the run config (its "start" is executed). */
+function guardState(cwd: string): string {
+  const cfg = join(cwd, "repro.config.json");
+  const cfgHash = existsSync(cfg) ? createHash("sha256").update(readFileSync(cfg)).digest("hex") : "";
+  return `${hashDir(join(cwd, ".repro"))}:${cfgHash}`;
+}
 
 export async function runLoop(bug: string, d: LoopDeps): Promise<LoopResult> {
-  const attempts: Attempt[] = [];
-  const changed = new Set<string>();
-  let credits = 0;
+  const state: LoopState = { attempts: [], changed: new Set<string>(), credits: 0 };
+  try {
+    return await loopBody(bug, d, state);
+  } catch (e) {
+    return {
+      status: "error",
+      bug,
+      objective: state.objective,
+      attempts: state.attempts,
+      credits: state.credits,
+      changedFiles: [...state.changed],
+      message: `Stopped by an error: ${(e as Error).message}. Any code changes made so far were left in place.`,
+    };
+  }
+}
+
+interface LoopState {
+  attempts: Attempt[];
+  changed: Set<string>;
+  credits: number;
+  objective?: string;
+}
+
+async function loopBody(bug: string, d: LoopDeps, state: LoopState): Promise<LoopResult> {
+  const { attempts, changed } = state;
   const result = (status: LoopStatus, message: string, objective?: string): LoopResult => ({
     status,
     bug,
     objective,
     attempts,
-    credits,
+    credits: state.credits,
     changedFiles: [...changed],
     message,
   });
@@ -59,7 +90,7 @@ export async function runLoop(bug: string, d: LoopDeps): Promise<LoopResult> {
     let r: KaneResult | undefined;
     for (let i = 0; i < 2; i++) {
       r = await d.kane({ objective, url: d.url });
-      credits += r.credits;
+      state.credits += r.credits;
       attempts.push({ phase, objective, testName, kane: r, fixExplanation });
       if (r.outcome !== "infra_error") break;
       d.log("infra", `Kane infrastructure error (${r.reason}) — ${i === 0 ? "retrying once" : "giving up"}`);
@@ -74,12 +105,21 @@ export async function runLoop(bug: string, d: LoopDeps): Promise<LoopResult> {
   for (let i = 0; i < MAX_OBJECTIVE_ATTEMPTS && !failure; i++) {
     d.log("think", i === 0 ? "Writing a Kane test that reproduces the bug" : "Rewriting the test (previous one passed)");
     const reply = await d.claude({ prompt: objectivePrompt(bug, d.url, previous), cwd: d.cwd, allowedTools: READ_ONLY, model: d.model });
-    const candidate = extractJson<{ objective: string }>(reply.text).objective;
+    let candidate: unknown;
+    try {
+      candidate = extractJson<{ objective?: unknown }>(reply.text).objective;
+    } catch {
+      candidate = undefined;
+    }
+    if (typeof candidate !== "string" || !candidate.trim()) {
+      throw new Error(`Claude did not return an objective. Reply started with: ${reply.text.slice(0, 300)}`);
+    }
     d.log("kane", `Running: ${candidate}`);
     const r = await kaneRun("reproduce", candidate);
     if (r.outcome === "infra_error") return result("infra_error", `Kane could not run: ${r.reason}`, candidate);
     if (r.outcome === "failed") {
       objective = candidate;
+      state.objective = candidate;
       failure = r;
       d.log("red", `Reproduced: ${r.oneLiner || r.reason}`);
     } else {
@@ -93,12 +133,11 @@ export async function runLoop(bug: string, d: LoopDeps): Promise<LoopResult> {
 
   // 2-4. Fix → verify → regression, with the objective frozen
   const frozen = objective;
-  const reproDir = join(d.cwd, ".repro");
   let failingBug = bug;
   let failingObjective = frozen;
   for (let n = 1; n <= MAX_FIX_ATTEMPTS; n++) {
     d.log("fix", `Fix attempt ${n}/${MAX_FIX_ATTEMPTS}`);
-    const guard = hashDir(reproDir);
+    const guard = guardState(d.cwd);
     const reply = await d.claude({
       prompt: fixPrompt(failingBug, failingObjective, failure, n),
       cwd: d.cwd,
@@ -115,8 +154,8 @@ export async function runLoop(bug: string, d: LoopDeps): Promise<LoopResult> {
     } catch {
       explanation = reply.text.slice(0, 300);
     }
-    if (hashDir(reproDir) !== guard) {
-      return result("tampered", "The fix step modified .repro/ (saved tests). Run aborted; review the changes.", frozen);
+    if (guardState(d.cwd) !== guard) {
+      return result("tampered", "The fix step modified .repro/ (saved tests) or repro.config.json. Run aborted; review the changes.", frozen);
     }
     d.log("kane", "Re-running the frozen test");
     const v = await kaneRun("verify", frozen, undefined, explanation);

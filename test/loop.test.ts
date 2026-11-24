@@ -149,7 +149,43 @@ describe("runLoop", () => {
     expect(obj.editMode).toBeFalsy();
     expect(obj.allowedTools).toEqual(["Read", "Glob", "Grep"]);
     expect(fix.editMode).toBe(true);
-    expect(fix.disallowedTools).toEqual(["Edit(.repro/**)", "Write(.repro/**)"]);
+    expect(fix.disallowedTools).toEqual(["Edit(.repro/**)", "Write(.repro/**)", "Edit(repro.config.json)", "Write(repro.config.json)"]);
     expect(fix.model).toBe("opus");
+  });
+});
+
+describe("runLoop review fixes", () => {
+  it("a Claude failure mid-loop returns status error with the attempts and changes so far", async () => {
+    const K = fakeKane(["failed", "failed"]);
+    let fixes = 0;
+    const claude: RunClaude = async (c) => {
+      if (!c.editMode) return { text: '{"objective":"OBJ 1"}' };
+      if (++fixes === 2) throw new Error("Claude Code error: usage limit reached");
+      return { text: '{"changed":["src/a.js"],"explanation":"e"}' };
+    };
+    const r = await runLoop("bug", deps({ kane: K.kane, claude }));
+    expect(r.status).toBe("error");
+    expect(r.message).toContain("usage limit reached");
+    expect(r.attempts).toHaveLength(2);
+    expect(r.changedFiles).toEqual(["src/a.js"]);
+    expect(r.credits).toBe(20);
+  });
+
+  it("a reply without a string objective is a clear error, not a spawn crash", async () => {
+    const K = fakeKane([]);
+    const claude: RunClaude = async () => ({ text: '{"test":"oops"}' });
+    const r = await runLoop("bug", deps({ kane: K.kane, claude }));
+    expect(r.status).toBe("error");
+    expect(r.message).toContain("Claude did not return an objective");
+    expect(K.calls).toHaveLength(0);
+  });
+
+  it("a fix that edits repro.config.json is tampered", async () => {
+    const d = deps({});
+    writeFileSync(join(d.cwd, "repro.config.json"), '{"url":"http://localhost:5173"}');
+    const K = fakeKane(["failed"]);
+    const C = fakeClaude(() => writeFileSync(join(d.cwd, "repro.config.json"), '{"url":"http://evil","start":"calc"}'));
+    const r = await runLoop("bug", { ...d, kane: K.kane, claude: C.claude });
+    expect(r.status).toBe("tampered");
   });
 });

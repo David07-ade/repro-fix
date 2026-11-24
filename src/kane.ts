@@ -1,6 +1,7 @@
 import { spawn, execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { killTree } from "./proc.js";
 
 export type KaneOutcome = "passed" | "failed" | "infra_error";
 
@@ -95,7 +96,7 @@ export const runKane: RunKane = ({ objective, url, timeoutS = 180 }) =>
       resolve(r);
     };
     const killer = setTimeout(() => {
-      child.kill();
+      killTree(child);
       finish(null);
     }, (timeoutS + 30) * 1000);
     child.on("close", (code) => finish(code));

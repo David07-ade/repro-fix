@@ -50,3 +50,18 @@ describe("parseArgs", () => {
     expect(parseArgs([]).cmd).toBe("help");
   });
 });
+
+describe("killTree", () => {
+  it("kills a shell-started process tree so its server stops answering", async () => {
+    const { killTree } = await import("../src/proc.js");
+    const { spawn } = await import("node:child_process");
+    const port = 48000 + Math.floor(Math.random() * 1000);
+    const child = spawn(`node -e "require('http').createServer((q,s)=>s.end('ok')).listen(${port})"`, { shell: true, stdio: "ignore" });
+    const url = `http://127.0.0.1:${port}`;
+    for (let i = 0; i < 40 && !(await isUp(url)); i++) await new Promise((r) => setTimeout(r, 250));
+    expect(await isUp(url)).toBe(true);
+    killTree(child);
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(await isUp(url, 1000)).toBe(false);
+  });
+});

@@ -1,4 +1,5 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
+import { killTree } from "./proc.js";
 
 export async function isUp(url: string, timeoutMs = 3000): Promise<boolean> {
   try {
@@ -7,12 +8,6 @@ export async function isUp(url: string, timeoutMs = 3000): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-function killTree(child: ChildProcess) {
-  if (child.exitCode !== null || !child.pid) return;
-  if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
-  else child.kill("SIGTERM");
 }
 
 /** Make sure the target app answers at `url`, starting it with `start` if needed. */

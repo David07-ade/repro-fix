@@ -10,8 +10,10 @@ const isRepo = (cwd: string) => git(cwd, ["rev-parse", "--is-inside-work-tree"])
 /** True only inside a git repo with no uncommitted changes. Call before the loop starts. */
 export function isCleanRepo(cwd: string): boolean {
   if (!isRepo(cwd)) return false;
-  const s = git(cwd, ["status", "--porcelain", "--", ".", ":(exclude).repro"]);
-  return s.ok && s.out.trim() === "";
+  // Whole repo, because the commit stages the whole repo. Only repro-fix's own .repro/ output is ignored.
+  const s = git(cwd, ["status", "--porcelain"]);
+  const dirty = s.out.split("\n").filter((l) => l.trim() && !/(^|\/)\.repro\//.test(l.slice(3)));
+  return s.ok && dirty.length === 0;
 }
 
 export function gitDiff(cwd: string): string {
