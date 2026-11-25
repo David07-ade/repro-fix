@@ -2,6 +2,8 @@
 
 **Your coding agent has to prove the bug in a real browser before it's allowed to fix it.**
 
+▶️ **[Watch the 4-minute demo](https://youtu.be/zFcdp9ccEVA)** · 🛒 **[Try the buggy demo shop](https://brightcart-demo.vercel.app)**
+
 Coding agents love to say *"Fixed! ✅"*. repro-fix doesn't take their word for it. Hand it a bug report in plain English and it will:
 
 1. 🧠 **Write a test.** Claude Code reads your app and writes a plain-English [Kane CLI](https://www.testmuai.com/kane-cli/) objective that should pass once the bug is fixed.

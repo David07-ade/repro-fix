@@ -1,6 +1,6 @@
 # Launch posts (post at least two)
 
-Replace `<VIDEO>` with the YouTube link.
+Demo video: https://youtu.be/zFcdp9ccEVA
 
 ---
 
@@ -16,7 +16,7 @@ You give it a plain-English bug report. Claude Code (run headless) reads the app
 Guardrails: if the test can't be made to fail, no code is touched; the fixer can't edit saved tests (tool deny rules plus a hash check); Kane infra errors are never counted as a reproduction.
 
 Repo (MIT), with real red→green reports committed: https://github.com/David07-ade/repro-fix
-4-minute demo: <VIDEO>
+4-minute demo: https://youtu.be/zFcdp9ccEVA
 Try the buggy demo shop: https://brightcart-demo.vercel.app
 
 Built for the TestMu AI Kane CLI hackathon. I'd love feedback on the loop design, especially the "freeze the test" part.
@@ -28,7 +28,7 @@ Built for the TestMu AI Kane CLI hackathon. I'd love feedback on the loop design
 1/ AI agents: "Fixed! ✅"
 Me: prove it.
 
-I built repro-fix: the agent must reproduce the bug in a real browser before it's allowed to touch the code. 🧵 <VIDEO>
+I built repro-fix: the agent must reproduce the bug in a real browser before it's allowed to touch the code. 🧵 https://youtu.be/zFcdp9ccEVA
 
 2/ You type a bug in plain English.
 → Claude Code writes a plain-English test
@@ -60,7 +60,7 @@ How it works:
 🟢 Kane re-runs the identical test, then all earlier ones as a regression suite
 📄 Every run leaves a report with the red run, the diff, the green run and recorded evidence
 
-Demo (4 min): <VIDEO>
+Demo (4 min): https://youtu.be/zFcdp9ccEVA
 Code (MIT): https://github.com/David07-ade/repro-fix
 Live demo shop (with the bugs): https://brightcart-demo.vercel.app
 
